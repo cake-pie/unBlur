@@ -288,8 +288,8 @@ namespace UnBlur
         private string FormatTextureInfo(GameDatabase.TextureInfo texInfo)
         {
             return
-                (texInfo.isNormalMap  ? "N" : " ") +
-                (texInfo.isReadable   ? "R" : " ") +
+                (texInfo.isNormalMap  ? "N" : "-") +
+                (texInfo.isReadable   ? "R" : "-") +
                 (texInfo.isCompressed ? "C" : "-") +
                 (texInfo.texture.format.isDXT() ? "C" : "-") +
                 String.Format(" {0,4:D}x{1,-4:D} {2,-2:D} ", texInfo.texture.width, texInfo.texture.height, texInfo.texture.mipmapCount) +
