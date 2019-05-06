@@ -285,6 +285,15 @@ namespace UnBlur
             Log(sb.ToStringAndRelease());
         }
 
+        private void DumpTextureInfo(string url)
+        {
+            GameDatabase.TextureInfo texInfo = GameDatabase.Instance.GetTextureInfo(url);
+            if (texInfo == null)
+                Log($"Unable to dump GameDatabase.TextureInfo for {url} -- texture not found");
+            else
+                Log(FormatTextureInfo(texInfo));
+        }
+
         private string FormatTextureInfo(GameDatabase.TextureInfo texInfo)
         {
             return
