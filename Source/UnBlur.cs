@@ -3,7 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using UnityEngine;
+using KSP.UI.Screens.DebugToolbar;
 
 namespace UnBlur
 {
@@ -38,6 +40,8 @@ namespace UnBlur
             // continues to hang on to an older, mipmapped copy of the texture that it obtained previously
             // Also does not undo any textures which are already de-mipmapped
             GameEvents.OnGameDatabaseLoaded.Add(Run);
+
+            GameEvents.onLevelWasLoaded.Add(EnableConsoleCommand);
         }
 
         private void OnDestroy()
@@ -307,22 +311,87 @@ namespace UnBlur
         }
         #endregion Core
 
-        // TODO
         #region Debug Console
-/*
         private const string DbgCommand = "unBlur";
         private const string DbgHelpString = "unBlur console tool.";
 
         private const string DbgCmdHelp = "help";
-        private const string DbgCmdTex  = "txtr";
         private const string DbgCmdInfo = "info";
-        private const string DbgCmdDump = "dump";
+        private const string DbgCmdTxtr = "texture";
+        private const string DbgCmdFldr = "folder";
+        private const string DbgCmdDump = "dumpDB";
+
+        private static readonly Regex DbgParser = new Regex(@"^\s*(?<command>\S+)(?:\s+(?<target>.+))?\s*$");
+
+        private static readonly string DbgMsgUsage = $"Type \"/{DbgCommand} {DbgCmdHelp}\" for usage.";
+        private static readonly string DbgMsgUnparseable = $"Unable to parse command. {DbgMsgUsage}";
+        private static readonly string DbgMsgInvalidCmd = $"{{0}} is not a valid command. {DbgMsgUsage}";
+        private static readonly string DbgMsgHelpText = $@"{DbgHelpString}
+Usage:
+
+/{DbgCommand} {DbgCmdHelp}
+Displays this help message.
+
+/{DbgCommand} {DbgCmdInfo} <target>
+Dump GameDatabase.TextureInfo data for the target texture
+e.g.:
+    /{DbgCommand} {DbgCmdInfo} modA/icon/toolbar_on
+
+/{DbgCommand} {DbgCmdTxtr} <target>
+Disable mipmaps on a single target texture
+e.g.:
+    /{DbgCommand} {DbgCmdTxtr} modA/icon/toolbar_off
+
+/{DbgCommand} {DbgCmdFldr} <target>
+Disable mipmaps on all textures in a single folder
+e.g.:
+    /{DbgCommand} {DbgCmdFldr} modA/icon/
+
+/{DbgCommand} {DbgCmdDump}
+Dump GameDatabase.TextureInfo data for all textures in the GameDatabase
+May be truncated in the console display, if so, flush the log file to disk and view it there instead";
+
+        private void EnableConsoleCommand(GameScenes gs)
+        {
+            if (gs != GameScenes.MAINMENU) return;
+            DebugScreenConsole.AddConsoleCommand(DbgCommand, DbgOnCommand, DbgHelpString);
+            GameEvents.onLevelWasLoaded.Remove(EnableConsoleCommand);
+        }
 
         private void DbgOnCommand(string argStr)
         {
-            Log("Not implemented yet.");
+            if (String.IsNullOrEmpty(argStr))
+                argStr = DbgCmdHelp;
+            Match m = DbgParser.Match(argStr);
+            if (!m.Success)
+            {
+                Log(DbgMsgUnparseable);
+                return;
+            }
+
+            string command = m.Groups["command"].Value;
+            switch (command)
+            {
+                case DbgCmdHelp:
+                    Log(DbgMsgHelpText);
+                    break;
+                case DbgCmdInfo:
+                    DumpTextureInfo(m.Groups["target"].Value);
+                    break;
+                case DbgCmdTxtr:
+                    DisableMipmaps(m.Groups["target"].Value, true);
+                    break;
+                case DbgCmdFldr:
+                    DisableMipmapsInFolder(m.Groups["target"].Value, true);
+                    break;
+                case DbgCmdDump:
+                    DumpTextureInfo();
+                    break;
+                default:
+                    Log(String.Format(DbgMsgInvalidCmd, command));
+                    break;
+            }
         }
-*/
         #endregion Debug Console
 
         #region MM Compatibility
