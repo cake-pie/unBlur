@@ -234,13 +234,13 @@ namespace UnBlur
             }
             if (unreadable == texInfo.isReadable)
                 Log("  WARN: GameDatabase TextureInfo has incorrect readable status");
-            newTex.Apply(false, unreadable);
             if (compress || oldTex.format.isDXT())
             {
                 newTex.Compress(true);
                 texInfo.isCompressed = newTex.format.isDXT();
                 if (debug) Log("  Compression attempted");
             }
+            newTex.Apply(false, unreadable);
             texInfo.texture = newTex;
             Destroy(oldTex);
             oldTex = null;
