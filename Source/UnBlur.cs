@@ -91,7 +91,7 @@ namespace UnBlur
                     break;
 
             // When reloading via ModuleManager (Alt+F11) PostPatchLoader/MMPatchLoader's StartLoad() is only called
-            // after GameDatabase is ready, so yield again to let it set ready = false; and ensure we don't get ahead of it
+            // after GameDatabase is ready, so yield to let it set ready = false; and ensure we don't get ahead of it
             yield return null;
 
             progressTitle = "unBlur: Waiting for ModuleManager to finish patching GameDatabase";
