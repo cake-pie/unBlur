@@ -107,10 +107,12 @@ namespace UnBlur
                     Log("Waiting for ModuleManager to call ModuleManagerPostLoad()");
                     yield break;
                 }
-                Log("Waiting for ModuleManager: yielding until its LoadingSystem is ready");
-            }
 
-            while (!MMAbsentOrReady()) yield return null;
+                Log("Waiting for ModuleManager: yielding until its LoadingSystem is ready");
+                do {
+                    yield return null;
+                } while (!MMAbsentOrReady());
+            }
 
             BatchUnBlur();
         }
