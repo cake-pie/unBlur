@@ -127,7 +127,7 @@ namespace UnBlur
         {
             progressTitle = "unBlur: Processing...";
             if (verbose) DumpTextureInfo();
-            Log("#### BEGIN BATCH PROCESSING ####\n{");
+            Log("Processing...\n#### BEGIN BATCH PROCESSING ####\n{");
 
             ConfigNode[] nodes = GameDatabase.Instance.GetConfigNodes(CfgNodeName);
             int nodeCount = nodes.Length;
@@ -158,7 +158,7 @@ namespace UnBlur
                 }
             }
 
-            Log("}\n#### END BATCH PROCESSING ####");
+            Debug.Log("}\n#### END BATCH PROCESSING ####");
             if (verbose) DumpTextureInfo();
             progressTitle = "unBlur: Done!";
             ready = true;
