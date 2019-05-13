@@ -170,6 +170,21 @@ namespace UnBlur
         private bool debug = false;
         private bool verbose = false;
 
+        public Texture2D GetTexture(string url, bool asNormalMap = false, bool compress = true)
+        {
+            GameDatabase.TextureInfo texInfo = GameDatabase.Instance.GetTextureInfo(url);
+            if (texInfo == null)
+            {
+                Log($"Unable to find texture {url} in GameDatabase");
+                return null;
+            }
+            DisableMipmaps(texInfo, compress);
+            if (asNormalMap)
+                return texInfo.normalMap;
+            else
+                return texInfo.texture;
+        }
+
         public bool DisableMipmaps(string url, bool compress)
         {
             GameDatabase.TextureInfo texInfo = GameDatabase.Instance.GetTextureInfo(url);
