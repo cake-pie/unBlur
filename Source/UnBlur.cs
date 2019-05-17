@@ -260,13 +260,24 @@ namespace UnBlur
             catch (UnityException)
             {
                 Log("  INFO: Texture is unreadable, using fallback technique");
-                // KSP only makes DDS and TRUECOLOR unreadable; TRUECOLOR doesn't have mipmaps
-                // so generally any unreadable textures we encounter should be DDS
-                // TODO check filename extension in case other mods make unreadable, mipmapped textures from non-DDS files and put them into GameDatabase
+
+                // check filename extension
+                if (texInfo.file.fileExtension != "dds")
+                {
+                    // KSP only makes DDS and TRUECOLOR unreadable; TRUECOLOR doesn't have mipmaps
+                    // so generally any unreadable textures found in the GameDatabase should originate from DDS files
+                    // unreadable, mipmapped textures in GameDatabase from non-DDS files are the work of other mods
+                    Log("  INFO: unreadable texture in GameDatabase that is not from a DDS file.");
+                    Log("  INFO: this is probably the work of another mod; unBlur will not touch this texture.");
+                    Log("... aborted");
+                    return false;
+                }
+
                 newTex = LoadDDS(texInfo.file, false);
                 if (newTex == null)
                 {
                     Log("  ERROR: Still unable to read texture");
+                    Log("... failed");
                     return false;
                 }
 
