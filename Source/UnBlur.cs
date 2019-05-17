@@ -534,7 +534,7 @@ May be truncated in the console display, if so, flush the log file to disk and v
                     DDSHeaderDX10 headerDX10 = new DDSHeaderDX10(reader);
                 }
 
-                mipmaps = mipmaps && ((header.dwCaps & DDSPixelFormatCaps.TEXTURE) != 0);
+                mipmaps = mipmaps && ((header.dwCaps & DDSPixelFormatCaps.MIPMAP) != 0);
                 // uint mipmapcount = (header.dwFlags & 0x20000 == 0) ? 1 : header.dwMipMapCount;
 
                 string dwFourCC;
