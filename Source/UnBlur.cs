@@ -484,11 +484,17 @@ May be truncated in the console display, if so, flush the log file to disk and v
 
     public static class UnBlurExtensions
     {
+        // DXT3 is no longer documented or supported, but still there
+        // https://forum.unity.com/threads/how-to-ensure-certain-compression-formats-per-texture.510951/
+        // DXT1 = 10, DXT5 = 12 ... infer DXT3 = 11 which is indeed observed in a few cases from GameDatabase TextureInfo dumps
+        // but DXT3Crunched does not appear to have been a thing (DXT1Crunched = 28, DXT5Crunched = 29)
+        // https://github.com/Unity-Technologies/UnityCsReference/blob/2017.3/Runtime/Export/GraphicsEnums.cs#L263-L264
         public static bool isDXT(this TextureFormat tf){
             switch (tf)
             {
                 case TextureFormat.DXT1:
                 case TextureFormat.DXT1Crunched:
+                case (TextureFormat) 11:
                 case TextureFormat.DXT5:
                 case TextureFormat.DXT5Crunched:
                     return true;
@@ -505,6 +511,10 @@ May be truncated in the console display, if so, flush the log file to disk and v
                 default:
                     return false;
             }
+        }
+        public static bool isDXT3(this TextureFormat tf){
+            if (tf == (TextureFormat) 11) return true;
+            return false;
         }
         public static bool isDXT5(this TextureFormat tf){
             switch (tf)
