@@ -225,28 +225,54 @@ namespace UnBlur
             TextureFormat newTexFmt = oldTex.format;
             if (newTexFmt.isDXT1())
                 newTexFmt = TextureFormat.RGB24;
-            else if (newTexFmt.isDXT5())
+            else if (newTexFmt.isDXT()) // DXT3, DXT5
                 newTexFmt = TextureFormat.ARGB32;
-            if (!newTexFmt.canSetPixels())
-            {
-                // look into GetRawTextureData / LoadRawTextureData
-                // needs further research and testing, as it requires exactly correctly-sized byte[]
-                Log($"... unable to proceed: cannot handle {oldTex.format.ToString()} format");
-                return false;
-            }
-
-            Texture2D newTex = new Texture2D(oldTex.width, oldTex.height, newTexFmt, false);
-            bool unreadable = false;
+            Texture2D newTex; // don't instantiate until we are sure that oldTex is readable; fallback behaves differently
             try {
                 if (newTexFmt.canSetPixels32())
-                    newTex.SetPixels32(oldTex.GetPixels32(0), 0);
+                {
+                    var data = oldTex.GetPixels32(0); // throws Unity Exception if unreadable
+                    newTex = new Texture2D(oldTex.width, oldTex.height, newTexFmt, false);
+                    newTex.SetPixels32(data, 0);
+                }
+                else if (newTexFmt.canSetPixels())
+                {
+                    var data = oldTex.GetPixels(0); // throws Unity Exception if unreadable
+                    newTex = new Texture2D(oldTex.width, oldTex.height, newTexFmt, false);
+                    newTex.SetPixels(data, 0);
+                }
                 else
-                    newTex.SetPixels(oldTex.GetPixels(0), 0);
+                {
+                    var data = oldTex.GetRawTextureData(); // this doesn't throw exception if unreadable
+                    if (data == null || data.Length == 0) throw new UnityException("GetRawTextureData returned nothing."); // workaround
+                    newTex = new Texture2D(oldTex.width, oldTex.height, newTexFmt, false);
+                    newTex.LoadRawTextureData(data);
+                }
+
+                if (compress || texInfo.isCompressed || oldTex.format.isDXT())
+                {
+                    newTex.Compress(true);
+                    texInfo.isCompressed = newTex.format.isDXT();
+                    if (debug) Log("  Compression attempted");
+                }
+                newTex.Apply(false, false);
             }
             catch (UnityException)
             {
                 Log("  INFO: Texture is unreadable, using fallback technique");
-                unreadable = true;
+                // KSP only makes DDS and TRUECOLOR unreadable; TRUECOLOR doesn't have mipmaps
+                // so generally any unreadable textures we encounter should be DDS
+                // TODO check filename extension in case other mods make unreadable, mipmapped textures from non-DDS files and put them into GameDatabase
+                newTex = LoadDDS(texInfo.file, false);
+                if (newTex == null)
+                {
+                    Log("  ERROR: Still unable to read texture");
+                    return false;
+                }
+
+                // when QualitySettings.masterTextureLimit > 0 unreadable textures don't have miplevel 0
+                // so this ends up just blitting the best available mipmap, not the full res original
+                /*
                 RenderTexture bak = RenderTexture.active;
                 RenderTexture tmp = RenderTexture.GetTemporary(oldTex.width, oldTex.height, 0);
                 Graphics.Blit(oldTex, tmp);
@@ -254,16 +280,8 @@ namespace UnBlur
                 newTex.ReadPixels(new Rect(0, 0, oldTex.width, oldTex.height), 0, 0);
                 RenderTexture.active = bak;
                 RenderTexture.ReleaseTemporary(tmp);
+                */
             }
-            if (unreadable == texInfo.isReadable)
-                Log("  WARN: GameDatabase TextureInfo has incorrect readable status");
-            if (compress || texInfo.isCompressed || oldTex.format.isDXT())
-            {
-                newTex.Compress(true);
-                texInfo.isCompressed = newTex.format.isDXT();
-                if (debug) Log("  Compression attempted");
-            }
-            newTex.Apply(false, unreadable);
             texInfo.texture = newTex;
             Destroy(oldTex);
             oldTex = null;
