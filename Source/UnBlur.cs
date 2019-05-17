@@ -202,7 +202,7 @@ namespace UnBlur
             if (texInfo.texture.mipmapCount <= 1)
             {
                 Log($"No need to disable mipmaps for {texInfo.name} -- already has none");
-                if (compress && !texInfo.isCompressed)
+                if (compress && !texInfo.isCompressed) // don't compress again if stock KSP already did it (or tried and failed)
                 {
                     if (debug)
                     {
