@@ -529,10 +529,11 @@ May be truncated in the console display, if so, flush the log file to disk and v
                     return null;
                 }
                 DDSHeader header = new DDSHeader(reader);
-                if (header.ddspf.dwFourCC == DDSValues.uintDX10)
-                {
-                    DDSHeaderDX10 headerDX10 = new DDSHeaderDX10(reader);
-                }
+                // Unnecessary: DX10 is not supported anyway
+                // if (header.ddspf.dwFourCC == DDSValues.uintDX10)
+                // {
+                //     DDSHeaderDX10 headerDX10 = new DDSHeaderDX10(reader);
+                // }
 
                 mipmaps = mipmaps && ((header.dwCaps & DDSPixelFormatCaps.MIPMAP) != 0);
                 // uint mipmapcount = (header.dwFlags & 0x20000 == 0) ? 1 : header.dwMipMapCount;
