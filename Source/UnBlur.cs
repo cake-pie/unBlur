@@ -508,9 +508,13 @@ May be truncated in the console display, if so, flush the log file to disk and v
         #region Utility
         // https://docs.microsoft.com/en-us/windows/desktop/direct3ddds/dx-graphics-dds-pguide
         // https://kerbalspaceprogram.com/api/namespace_d_d_s_headers.html
-        private static Texture2D LoadDDS(UrlDir.UrlFile file, bool mipmaps)
+        public static Texture2D LoadDDS(UrlDir.UrlFile file, bool mipmaps = true)
         {
-            string filepath = file.fullPath;
+            return LoadDDS(file.fullPath, mipmaps);
+        }
+
+        public static Texture2D LoadDDS(string filepath, bool mipmaps = true)
+        {
             Log("LoadDDS: Loading DDS file from "+filepath);
             if (!File.Exists(filepath))
             {
