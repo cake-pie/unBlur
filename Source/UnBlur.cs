@@ -1,10 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using DDSHeaders;
 using KSP.UI.Screens.DebugToolbar;
 
 namespace UnBlur
@@ -475,6 +477,102 @@ May be truncated in the console display, if so, flush the log file to disk and v
         #endregion MM Compatibility
 
         #region Utility
+        // https://docs.microsoft.com/en-us/windows/desktop/direct3ddds/dx-graphics-dds-pguide
+        // https://kerbalspaceprogram.com/api/namespace_d_d_s_headers.html
+        private static Texture2D LoadDDS(UrlDir.UrlFile file, bool mipmaps)
+        {
+            string filepath = file.fullPath;
+            Log("LoadDDS: Loading DDS file from "+filepath);
+            if (!File.Exists(filepath))
+            {
+                Log("LoadDDS: File not found!");
+                return null;
+            }
+            using (BinaryReader reader = new BinaryReader(File.Open(filepath, FileMode.Open, FileAccess.Read)))
+            {
+                if (reader.ReadUInt32() != DDSValues.uintMagic)
+                {
+                    Log("LoadDDS: Not a DDS file!");
+                    return null;
+                }
+                DDSHeader header = new DDSHeader(reader);
+                if (header.ddspf.dwFourCC == DDSValues.uintDX10)
+                {
+                    DDSHeaderDX10 headerDX10 = new DDSHeaderDX10(reader);
+                }
+
+                mipmaps = mipmaps && ((header.dwCaps & DDSPixelFormatCaps.TEXTURE) != 0);
+                // uint mipmapcount = (header.dwFlags & 0x20000 == 0) ? 1 : header.dwMipMapCount;
+
+                string dwFourCC;
+                if (header.ddspf.dwFourCC == DDSValues.uintDXT1)
+                {
+                    try
+                    {
+                        Texture2D result = new Texture2D((int) header.dwWidth, (int) header.dwHeight, TextureFormat.DXT1, mipmaps);
+                        result.LoadRawTextureData(reader.ReadBytes(
+                            mipmaps ? ((int) (reader.BaseStream.Length - reader.BaseStream.Position)) :
+                            Math.Max(1, ( ((int) header.dwWidth + 3) / 4 ) ) * Math.Max(1, ( ((int) header.dwHeight + 3) / 4 ) ) * 8
+                        ));
+                        result.Apply(false, true);
+                        return result;
+                    }
+                    catch (UnityException e)
+                    {
+                        Log("LoadDDS: error loading DXT1: " + e.Message);
+                        return null;
+                    }
+                }
+                else if (header.ddspf.dwFourCC == DDSValues.uintDXT3)
+                {
+                    try
+                    {
+                        // Undocumented DXT3: see notes at UnBlurExtensions.isDXT()
+                        Texture2D result = new Texture2D((int) header.dwWidth, (int) header.dwHeight, (TextureFormat) 11, mipmaps);
+                        result.LoadRawTextureData(reader.ReadBytes(
+                            mipmaps ? ((int) (reader.BaseStream.Length - reader.BaseStream.Position)) :
+                            Math.Max(1, ( ((int) header.dwWidth + 3) / 4 ) ) * Math.Max(1, ( ((int) header.dwHeight + 3) / 4 ) ) * 16
+                        ));
+                        result.Apply(false, true);
+                        return result;
+                    }
+                    catch (UnityException e)
+                    {
+                        Log("LoadDDS: error loading DXT3: " + e.Message);
+                        return null;
+                    }
+                }
+                else if (header.ddspf.dwFourCC == DDSValues.uintDXT5)
+                {
+                    try
+                    {
+                        Texture2D result = new Texture2D((int) header.dwWidth, (int) header.dwHeight, TextureFormat.DXT5, mipmaps);
+                        result.LoadRawTextureData(reader.ReadBytes(
+                            mipmaps ? ((int) (reader.BaseStream.Length - reader.BaseStream.Position)) :
+                            Math.Max(1, ( ((int) header.dwWidth + 3) / 4 ) ) * Math.Max(1, ( ((int) header.dwHeight + 3) / 4 ) ) * 16
+                        ));
+                        result.Apply(false, true);
+                        return result;
+                    }
+                    catch (UnityException e)
+                    {
+                        Log("LoadDDS: error loading DXT5: " + e.Message);
+                        return null;
+                    }
+                }
+                else if (header.ddspf.dwFourCC == DDSValues.uintDXT2) dwFourCC = "DXT2";
+                else if (header.ddspf.dwFourCC == DDSValues.uintDXT4) dwFourCC = "DXT4";
+                else if (header.ddspf.dwFourCC == DDSValues.uintDX10) dwFourCC = "DX10";
+                else
+                {
+                    Log("LoadDDS: Unrecognized format: " + header.ddspf.dwFourCC.ToString("X"));
+                    return null;
+                }
+                Log($"LoadDDS: Format {dwFourCC} is not supported.");
+                return null;
+            }
+        }
+
         private static void Log(string msg)
         {
             Debug.Log("[unBlur] " + msg);
