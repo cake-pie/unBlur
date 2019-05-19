@@ -144,17 +144,29 @@ namespace UnBlur
                 for (int i = 0; i < tgtFR.Length; i++)
                 {
                     progressTitle = $"unBlur: Processing target {++targetCurr}/{targetTotal} in node {nodeIdx+1}/{nodeCount}";
-                    DisableMipmapsInFolder(tgtFR[i], compress, true);
+                    string tgt = tgtFR[i].Trim();
+                    if (String.IsNullOrEmpty(tgt))
+                        Log(CfgValFolderR + " target cannot be empty!");
+                    else
+                        DisableMipmapsInFolder(tgt, compress, true);
                 }
                 for (int i = 0; i < tgtFS.Length; i++)
                 {
                     progressTitle = $"unBlur: Processing target {++targetCurr}/{targetTotal} in node {nodeIdx+1}/{nodeCount}";
-                    DisableMipmapsInFolder(tgtFS[i], compress, false);
+                    string tgt = tgtFS[i].Trim();
+                    if (String.IsNullOrEmpty(tgt))
+                        Log(CfgValFolderS + " target cannot be empty!");
+                    else
+                        DisableMipmapsInFolder(tgt, compress, false);
                 }
                 for (int i = 0; i < tgtT.Length; i++)
                 {
                     progressTitle = $"unBlur: Processing target {++targetCurr}/{targetTotal} in node {nodeIdx+1}/{nodeCount}";
-                    DisableMipmaps(tgtT[i], compress);
+                    string tgt = tgtT[i].Trim();
+                    if (String.IsNullOrEmpty(tgt))
+                        Log(CfgValTexture + " target cannot be empty!");
+                    else
+                        DisableMipmaps(tgt, compress);
                 }
             }
 
@@ -172,6 +184,9 @@ namespace UnBlur
 
         public Texture2D GetTexture(string url, bool asNormalMap = false, bool compress = true)
         {
+            if (String.IsNullOrEmpty(url))
+                throw new ArgumentNullException("GetTexture: url cannot be null or empty!");
+
             GameDatabase.TextureInfo texInfo = GameDatabase.Instance.GetTextureInfo(url);
             if (texInfo == null)
             {
@@ -187,6 +202,9 @@ namespace UnBlur
 
         public bool DisableMipmaps(string url, bool compress)
         {
+            if (String.IsNullOrEmpty(url))
+                throw new ArgumentNullException("DisableMipmaps: url cannot be null or empty!");
+
             GameDatabase.TextureInfo texInfo = GameDatabase.Instance.GetTextureInfo(url);
             if (texInfo == null)
             {
@@ -199,6 +217,12 @@ namespace UnBlur
 
         private bool DisableMipmaps(GameDatabase.TextureInfo texInfo, bool compress)
         {
+            if (texInfo.texture == null)
+            {
+                Log($"Unable to disable mipmaps for {texInfo.name} -- texture is null");
+                return false;
+            }
+
             if (texInfo.texture.mipmapCount <= 1)
             {
                 Log($"No need to disable mipmaps for {texInfo.name} -- already has none");
@@ -258,6 +282,13 @@ namespace UnBlur
             catch (UnityException)
             {
                 Log("  INFO: Texture is unreadable, using fallback technique");
+
+                if (texInfo.file == null)
+                {
+                    Log("  ERROR: {texInfo.name} has no file to read from!");
+                    Log("... failed");
+                    return false;
+                }
 
                 // check filename extension
                 if (texInfo.file.fileExtension != "dds")
@@ -350,9 +381,10 @@ namespace UnBlur
                 (texInfo.isNormalMap  ? "N" : "-") +
                 (texInfo.isReadable   ? "R" : "-") +
                 (texInfo.isCompressed ? "C" : "-") +
-                (texInfo.texture.format.isDXT() ? "C" : "-") +
-                String.Format(" {0,4:D}x{1,-4:D} {2,-2:D} ", texInfo.texture.width, texInfo.texture.height, texInfo.texture.mipmapCount) +
-                texInfo.texture.format.ToString("G").PadRight(16) +
+                ((texInfo.texture == null) ? "? ----x---- -- <null texture!> " : (
+                    (texInfo.texture.format.isDXT() ? "C" : "-") +
+                    String.Format(" {0,4:D}x{1,-4:D} {2,-2:D} ", texInfo.texture.width, texInfo.texture.height, texInfo.texture.mipmapCount) +
+                    texInfo.texture.format.ToString("G").PadRight(16) )) +
                 texInfo.name;
         }
         #endregion Core
@@ -372,6 +404,7 @@ namespace UnBlur
         private static readonly string DbgMsgUsage = $"Type \"/{DbgCommand} {DbgCmdHelp}\" for usage.";
         private static readonly string DbgMsgUnparseable = $"Unable to parse command. {DbgMsgUsage}";
         private static readonly string DbgMsgInvalidCmd = $"{{0}} is not a valid command. {DbgMsgUsage}";
+        private static readonly string DbgMsgSpecifyTgt = $"You must specify a target for the command: {{0}}. {DbgMsgUsage}";
         private static readonly string DbgMsgHelpText = $@"{DbgHelpString}
 Usage:
 
@@ -422,14 +455,32 @@ May be truncated in the console display, if so, flush the log file to disk and v
                     Log(DbgMsgHelpText);
                     break;
                 case DbgCmdInfo:
-                    DumpTextureInfo(m.Groups["target"].Value);
+                {
+                    string tgt = m.Groups["target"].Value.Trim();
+                    if (String.IsNullOrEmpty(tgt))
+                        Log(String.Format(DbgMsgSpecifyTgt, command));
+                    else
+                        DumpTextureInfo(tgt);
                     break;
+                }
                 case DbgCmdTxtr:
-                    DisableMipmaps(m.Groups["target"].Value, true);
+                {
+                    string tgt = m.Groups["target"].Value.Trim();
+                    if (String.IsNullOrEmpty(tgt))
+                        Log(String.Format(DbgMsgSpecifyTgt, command));
+                    else
+                        DisableMipmaps(tgt, true);
                     break;
+                }
                 case DbgCmdFldr:
-                    DisableMipmapsInFolder(m.Groups["target"].Value, true);
+                {
+                    string tgt = m.Groups["target"].Value.Trim();
+                    if (String.IsNullOrEmpty(tgt))
+                        Log(String.Format(DbgMsgSpecifyTgt, command));
+                    else
+                        DisableMipmapsInFolder(tgt, true);
                     break;
+                }
                 case DbgCmdDump:
                     DumpTextureInfo();
                     break;
@@ -508,11 +559,16 @@ May be truncated in the console display, if so, flush the log file to disk and v
         // https://kerbalspaceprogram.com/api/namespace_d_d_s_headers.html
         public static Texture2D LoadDDS(UrlDir.UrlFile file, bool mipmaps = true)
         {
+            if (file == null)
+                throw new ArgumentNullException("LoadDDS: file cannot be null!");
             return LoadDDS(file.fullPath, mipmaps);
         }
 
         public static Texture2D LoadDDS(string filepath, bool mipmaps = true)
         {
+            if (String.IsNullOrEmpty(filepath))
+                throw new ArgumentNullException("LoadDDS: filepath cannot be null or empty!");
+
             Log("LoadDDS: Loading DDS file from "+filepath);
             if (!File.Exists(filepath))
             {
