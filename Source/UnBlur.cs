@@ -111,9 +111,7 @@ namespace UnBlur
                 }
 
                 Log("Waiting for ModuleManager: yielding until its LoadingSystem is ready");
-                do {
-                    yield return null;
-                } while (!MMAbsentOrReady());
+                yield return new WaitUntil(() => MMAbsentOrReady());
             }
 
             BatchUnBlur();
