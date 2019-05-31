@@ -193,7 +193,7 @@ namespace UnBlur
                 Log($"Unable to find texture {url} in GameDatabase");
                 return null;
             }
-            DisableMipmaps(texInfo, compress);
+            DisableMipmaps(texInfo, compress, true);
             if (asNormalMap)
                 return texInfo.normalMap;
             else
@@ -215,7 +215,7 @@ namespace UnBlur
             return DisableMipmaps(texInfo, compress);
         }
 
-        private bool DisableMipmaps(GameDatabase.TextureInfo texInfo, bool compress)
+        private bool DisableMipmaps(GameDatabase.TextureInfo texInfo, bool compress, bool suppressRepetition = false)
         {
             if (texInfo.texture == null)
             {
@@ -225,7 +225,8 @@ namespace UnBlur
 
             if (texInfo.texture.mipmapCount <= 1)
             {
-                Log($"No need to disable mipmaps for {texInfo.name} -- already has none");
+                if (!suppressRepetition || debug)
+                    Log($"No need to disable mipmaps for {texInfo.name} -- already has none");
                 if (compress && !texInfo.isCompressed) // don't compress again if stock KSP already did it (or tried and failed)
                 {
                     if (debug)
