@@ -9,5 +9,5 @@
 [assembly: AssemblyTrademark ("")]
 [assembly: AssemblyCulture ("")]
 
-[assembly: AssemblyVersion ("0.4.0.0")]
-[assembly: KSPAssembly("unBlur", 0, 4)]
+[assembly: AssemblyVersion ("0.5.0.0")]
+[assembly: KSPAssembly("unBlur", 0, 5)]
